@@ -1,0 +1,176 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v1.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号 1.x.x（留空则自动递增补丁号，如 1.0.0 -> 1.0.1）'
+        required: false
+        type: string
+        default: ''
+      draft:
+        description: '仅生成草稿 Release，不自动发布'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: 计算版本并创建 Release
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.ver.outputs.version }}
+      tag: ${{ steps.ver.outputs.tag }}
+      draft: ${{ steps.ver.outputs.draft }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 解析版本号
+        id: ver
+        env:
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          GITHUB_REF: ${{ github.ref }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_DRAFT: ${{ inputs.draft }}
+        run: node scripts/ci/version.mjs
+
+      - name: 同步版本号到项目文件
+        run: node scripts/ci/sync-version.mjs "${{ steps.ver.outputs.version }}"
+
+      - name: 生成 Release 说明
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+        run: node scripts/ci/release-notes.mjs "${{ steps.ver.outputs.version }}" RELEASE_NOTES.md
+
+      - name: 创建 Release（草稿）
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release create "${{ steps.ver.outputs.tag }}" RELEASE_NOTES.md \
+            --draft \
+            --target "$GITHUB_SHA" \
+            --title "Lucky Number v${{ steps.ver.outputs.version }}" \
+            --notes-file RELEASE_NOTES.md
+
+  build:
+    name: 打包 ${{ matrix.platform }}
+    needs: prepare
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows
+            os: windows-latest
+            rust-targets: ''
+          - platform: linux
+            os: ubuntu-22.04
+            rust-targets: ''
+          - platform: macos
+            os: macos-latest
+            rust-targets: 'aarch64-apple-darwin,x86_64-apple-darwin'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.rust-targets }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: ${{ matrix.platform }}
+
+      - name: 安装 Linux 系统依赖
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf
+
+      - name: 同步版本号
+        run: node scripts/ci/sync-version.mjs "${{ needs.prepare.outputs.version }}"
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 构建（Windows / Linux）
+        if: matrix.platform != 'macos'
+        run: npm run tauri -- build
+
+      - name: 构建（macOS universal）
+        if: matrix.platform == 'macos'
+        run: npm run tauri -- build --target universal-apple-darwin
+
+      - name: 归集产物
+        run: node scripts/ci/collect.mjs "${{ matrix.platform }}" "${{ needs.prepare.outputs.version }}" dist-release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bundles-${{ matrix.platform }}
+          path: dist-release/*
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: 上传产物并发布
+    needs: [prepare, build]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bundles-*
+          merge-multiple: true
+          path: dist-release
+
+      - name: 生成 SHA256 校验和
+        run: node scripts/ci/checksums.mjs dist-release
+
+      - name: 上传全部资产
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: gh release upload "$TAG" dist-release/* --clobber
+
+      - name: 正式发布 Release
+        if: needs.prepare.outputs.draft != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: gh release edit "$TAG" --draft=false
+
+      - name: 输出 Release 地址
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: gh release view "$TAG" --json url,isDraft

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>幸运号码 · Lucky Number</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="mesh"></div>
+  </div>
+
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 48 48" fill="none">
+            <path d="M24 3.5 28.4 17.2 42 13.8 31.1 23.6 42 33.4 28.4 30 24 43.7 19.6 30 6 33.4 16.9 23.6 6 13.8 19.6 17.2 24 3.5Z" fill="url(#star)"/>
+            <circle cx="24" cy="23.6" r="4.1" fill="#0B0D1A"/>
+            <defs><linearGradient id="star" x1="6" y1="3" x2="42" y2="44" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE9A8"/><stop offset=".5" stop-color="#FFC24D"/><stop offset="1" stop-color="#FF7A5C"/></linearGradient></defs>
+          </svg>
+        </div>
+        <div class="brand-copy">
+          <h1>LUCKY <em>NUMBER</em></h1>
+          <p>幸运号码实验室 <span class="dot-sep">·</span> 模拟选号</p>
+        </div>
+      </div>
+      <div class="topbar-meta">
+        <div class="session-counter"><span>本次会话</span><b id="totalCount">0</b><span>注</span></div>
+        <div class="conn-pill" id="connPill"><i></i><span id="connText">桌面端已连接</span></div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="main-col">
+        <div class="panel control-panel">
+          <div class="panel-head">
+            <span class="eyebrow"><b>01</b> 选择玩法</span>
+            <span class="head-hint">每注独立随机 · 同区号码不重复</span>
+          </div>
+
+          <div class="segment" id="segment" role="tablist" aria-label="玩法选择">
+            <button class="seg-item active" data-kind="ssq" role="tab" aria-selected="true">
+              <span class="seg-glyph glyph-ssq"><i></i><i></i></span>
+              <span class="seg-title">双色球</span>
+              <span class="seg-desc">6 红 + 1 蓝</span>
+            </button>
+            <button class="seg-item" data-kind="dlt" role="tab" aria-selected="false">
+              <span class="seg-glyph glyph-dlt"><i></i><i></i></span>
+              <span class="seg-title">大乐透</span>
+              <span class="seg-desc">5 前区 + 2 后区</span>
+            </button>
+          </div>
+
+          <div class="rule-row-wrap" id="ruleRows">
+            <div class="rule-row">
+              <span class="rule-chip" id="frontChip">红球</span>
+              <span class="rule-text" id="frontRule">01–33 中选 6 个</span>
+              <span class="rule-odds">33 选 6</span>
+            </div>
+            <div class="rule-row">
+              <span class="rule-chip" id="backChip">蓝球</span>
+              <span class="rule-text" id="backRule">01–16 中选 1 个</span>
+              <span class="rule-odds">16 选 1</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="action-zone">
+          <button class="generate-btn" id="generateBtn">
+            <span class="btn-sheen"></span>
+            <span class="btn-star" aria-hidden="true">✦</span>
+            <span class="btn-main">一键生成 5 注</span>
+            <span class="btn-key">SPACE / ENTER</span>
+          </button>
+          <div class="ghost-actions">
+            <button class="ghost-btn" id="copyAllBtn"><span class="g-icon">⧉</span> 复制全部</button>
+            <button class="ghost-btn" id="clearBtn"><span class="g-icon">⌫</span> 清空</button>
+          </div>
+        </div>
+
+        <div class="panel ticket-panel">
+          <div class="panel-head">
+            <span class="eyebrow"><b>02</b> 本次选号 <small id="kindBadge">双色球</small></span>
+            <span class="head-hint" id="generatedAt">等待生成…</span>
+          </div>
+          <div class="ticket-list" id="ticketList"></div>
+        </div>
+      </section>
+
+      <aside class="side-col">
+        <div class="panel hot-panel">
+          <div class="panel-head">
+            <span class="eyebrow"><b>03</b> 号码热度</span>
+            <span class="head-hint">本次会话累计</span>
+          </div>
+          <div class="hot-section">
+            <div class="hot-title" id="hotFrontTitle"><span class="hot-dot dot-red"></span> 红球出现频次</div>
+            <div class="hot-list" id="hotFront"></div>
+          </div>
+          <div class="hot-section">
+            <div class="hot-title" id="hotBackTitle"><span class="hot-dot dot-blue"></span> 蓝球出现频次</div>
+            <div class="hot-list" id="hotBack"></div>
+          </div>
+          <p class="hot-note">随机样本很小，热度仅供娱乐观察，不代表任何趋势。</p>
+        </div>
+
+        <div class="panel fact-panel">
+          <div class="panel-head"><span class="eyebrow"><b>04</b> 玩法速览</span></div>
+          <div class="fact-grid">
+            <div class="fact-item"><span>双色球 · 红球</span><b>33 选 6</b></div>
+            <div class="fact-item"><span>双色球 · 蓝球</span><b>16 选 1</b></div>
+            <div class="fact-item"><span>大乐透 · 前区</span><b>35 选 5</b></div>
+            <div class="fact-item"><span>大乐透 · 后区</span><b>12 选 2</b></div>
+          </div>
+          <div class="fact-foot">号码由本地系统随机熵生成，每次结果互不影响。</div>
+        </div>
+
+        <div class="notice-card">
+          <div class="notice-icon" aria-hidden="true">!</div>
+          <p><b>理性提示</b><br />本工具仅用于模拟随机选号与娱乐，不预测开奖结果、不提供投注建议。购彩有风险，未成年人不得购彩，请理性对待、量力而行。</p>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="footer">
+      <span><i class="footer-dot"></i> TAURI 2.0 · 本地运行 · 不联网</span>
+      <span>MADE FOR FUN ✦</span>
+    </footer>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

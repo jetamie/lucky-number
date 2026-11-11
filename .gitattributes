@@ -1,0 +1,8 @@
+# CI 脚本按 LF 解析文本字段，统一行尾避免 Windows runner (core.autocrlf=true) 转出 CRLF。
+* text=auto eol=lf
+
+# 二进制资产不做任何转换。
+*.png binary
+*.ico binary
+*.icns binary
+*.exe binary

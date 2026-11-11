@@ -58,16 +58,28 @@ jobs:
           GITHUB_SHA: ${{ github.sha }}
         run: node scripts/ci/release-notes.mjs "${{ steps.ver.outputs.version }}" RELEASE_NOTES.md
 
-      - name: 创建 Release（草稿）
+      - name: 创建或复用 Release（草稿）
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GH_REPO: ${{ github.repository }}
+          TAG: ${{ steps.ver.outputs.tag }}
+          TITLE: Lucky Number v${{ steps.ver.outputs.version }}
         run: |
-          gh release create "${{ steps.ver.outputs.tag }}" RELEASE_NOTES.md \
-            --draft \
-            --target "$GITHUB_SHA" \
-            --title "Lucky Number v${{ steps.ver.outputs.version }}" \
-            --notes-file RELEASE_NOTES.md
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            draft="$(gh release view "$TAG" --json isDraft --jq '.isDraft')"
+            if [ "$draft" != "true" ]; then
+              echo "Release $TAG 已正式发布，请使用新的版本号" >&2
+              exit 1
+            fi
+            echo "复用已有草稿 $TAG（上次构建失败留下的）"
+            gh release edit "$TAG" --title "$TITLE" --notes-file RELEASE_NOTES.md
+          else
+            gh release create "$TAG" RELEASE_NOTES.md \
+              --draft \
+              --target "$GITHUB_SHA" \
+              --title "$TITLE" \
+              --notes-file RELEASE_NOTES.md
+          fi
 
   build:
     name: 打包 ${{ matrix.platform }}

@@ -39,10 +39,13 @@ editJson("package-lock.json", (data) => {
 });
 editJson("src-tauri/tauri.conf.json", (data) => { data.version = version; });
 
+// Windows runner 的 core.autocrlf 会把 checkout 出的文本转为 CRLF，这里必须两种行尾都能匹配。
+// Cargo.toml 的多行 $ 断言本身把 \r 视为行终止符，无需改动；Cargo.lock 的 \r?\n 在捕获组内，
+// 替换时会把原始行尾一并写回，不会造成 LF/CRLF 混排。
 replaceOnce("src-tauri/Cargo.toml", /^version = "[^"]+"$/m, `version = "${version}"`);
 replaceOnce(
   "src-tauri/Cargo.lock",
-  /(name = "lucky-number"\nversion = ")[^"]+(")/,
+  /(name = "lucky-number"\r?\nversion = ")[^"]+(")/,
   `$1${version}$2`
 );
 

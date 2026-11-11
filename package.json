@@ -11,8 +11,5 @@
   },
   "devDependencies": {
     "@tauri-apps/cli": "^2.12.0"
-  },
-  "dependencies": {
-    "lucky-number": "file:"
   }
 }

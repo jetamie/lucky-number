@@ -1,6 +1,6 @@
 /* 幸运号码 · 前端交互
- * 桌面端通过 Tauri invoke 调用 Rust 侧的等概率抽样；
- * 浏览器直接打开时自动降级为本地 Web Crypto 抽样，方便预览界面。
+ * 桌面端通过 Tauri invoke 调用 Rust 侧的等概率抽样与开奖数据更新；
+ * 浏览器直接打开时选号降级为 Web Crypto 本地随机，开奖数据只用内置快照。
  */
 
 const RULES = {
@@ -18,8 +18,9 @@ const RULES = {
 
 const PER_ROUND = 5;
 const $ = (id) => document.getElementById(id);
-/* 由 data/history.js 提供，随包内置；缺失时降级为空数据，不影响选号。 */
-const HISTORY = window.LUCKY_HISTORY || { ssq: [], dlt: [], updatedAt: "", source: {} };
+/* 由 data/history.js 提供，随包内置；联网失败时永远可以回退到这份快照。 */
+const BUILTIN_HISTORY = window.LUCKY_HISTORY || { ssq: [], dlt: [], updatedAt: "", source: {} };
+let HISTORY = BUILTIN_HISTORY;
 
 const state = {
   kind: "ssq",
@@ -28,6 +29,8 @@ const state = {
   total: 0,
   busy: false,
   desktop: false,
+  historyBusy: false,
+  historyStatus: { label: "内置数据", variant: "builtin" },
 };
 
 const fmt = (n) => String(n).padStart(2, "0");
@@ -200,6 +203,90 @@ function historyBalls(numbers, ballClass) {
     .join("");
 }
 
+/* 状态角标：内置数据 / 在线更新 / 本地缓存，刷新中临时显示「更新中」但不记住。 */
+function setHistoryStatus(label, variant, remember = true) {
+  const badge = $("historyStatus");
+  badge.textContent = label;
+  badge.dataset.state = variant;
+  if (remember) state.historyStatus = { label, variant };
+}
+
+function restoreHistoryStatus() {
+  const badge = $("historyStatus");
+  badge.textContent = state.historyStatus.label;
+  badge.dataset.state = state.historyStatus.variant;
+}
+
+function localToday() {
+  const now = new Date();
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+/* Rust 命令返回结构与 window.LUCKY_HISTORY 一致；某个玩法为空时用内置快照补齐。 */
+function mergeHistory(data) {
+  const builtinSource = BUILTIN_HISTORY.source || {};
+  const onlineSource = (data && data.source) || {};
+  const rowsOf = (kind) => (data && Array.isArray(data[kind]) ? data[kind] : []);
+  const builtinRowsOf = (kind) => (Array.isArray(BUILTIN_HISTORY[kind]) ? BUILTIN_HISTORY[kind] : []);
+  const pickRows = (kind) => (rowsOf(kind).length > 0 ? rowsOf(kind) : builtinRowsOf(kind));
+  const pickSource = (kind) => {
+    if (rowsOf(kind).length === 0) return builtinSource[kind] || "官方开奖公告";
+    return onlineSource[kind] || builtinSource[kind] || "官方开奖公告";
+  };
+  return {
+    updatedAt: (data && data.updatedAt) || BUILTIN_HISTORY.updatedAt || "",
+    online: Boolean(data && data.online),
+    source: { ssq: pickSource("ssq"), dlt: pickSource("dlt") },
+    ssq: pickRows("ssq"),
+    dlt: pickRows("dlt"),
+  };
+}
+
+/* 桌面端启动时自动刷新一次，也可点右上角按钮手动刷新；
+ * 请求由 Rust 侧发出（官方接口无 CORS 头），失败时静默保留内置快照。 */
+async function refreshHistory(manual) {
+  const invoke = window.__TAURI_INTERNALS__ && window.__TAURI_INTERNALS__.invoke;
+  const button = $("historyRefresh");
+  if (!invoke) {
+    button.hidden = true;
+    setHistoryStatus("内置数据", "builtin");
+    return;
+  }
+  if (state.historyBusy) {
+    if (manual) showToast("开奖数据正在更新中");
+    return;
+  }
+
+  state.historyBusy = true;
+  button.disabled = true;
+  button.classList.add("is-busy");
+  setHistoryStatus("更新中", "busy", false);
+
+  try {
+    const data = await invoke("refresh_history", { today: localToday() });
+    if (!data || !Array.isArray(data.ssq) || !Array.isArray(data.dlt)) {
+      throw new Error("开奖数据结构异常");
+    }
+    HISTORY = mergeHistory(data);
+    renderHistory();
+    if (data.online) {
+      setHistoryStatus("在线更新", "online");
+      if (manual) showToast("开奖数据已更新");
+    } else {
+      setHistoryStatus("本地缓存", "cache");
+      if (manual) showToast("官方数据暂不可用，已使用本地缓存");
+    }
+  } catch (error) {
+    restoreHistoryStatus();
+    if (manual) showToast("更新失败，已保留当前开奖数据");
+  } finally {
+    state.historyBusy = false;
+    button.disabled = false;
+    button.classList.remove("is-busy");
+  }
+}
+
 function renderHistory() {
   const rule = RULES[state.kind];
   const rows = HISTORY[state.kind];
@@ -208,9 +295,9 @@ function renderHistory() {
   const note = $("historyNote");
 
   if (!Array.isArray(rows) || rows.length === 0) {
-    list.innerHTML = `<div class="history-empty">暂无开奖数据，等待自动更新</div>`;
+    list.innerHTML = `<div class="history-empty">暂无开奖数据，可点右上角 ↻ 更新</div>`;
     count.textContent = "暂无数据";
-    note.textContent = "数据由定时任务更新，以官方公告为准";
+    note.textContent = "数据来自官方开奖公告，仅供查阅 · 以官方公告为准";
     return;
   }
 
@@ -341,6 +428,8 @@ function bindEvents() {
 
   $("clearBtn").addEventListener("click", clearTickets);
 
+  $("historyRefresh").addEventListener("click", () => refreshHistory(true));
+
   $("ticketList").addEventListener("click", async (event) => {
     const button = event.target.closest(".ticket-copy");
     if (!button) return;
@@ -366,6 +455,8 @@ function init() {
   renderHistory();
   updateConnection();
   generate();
+  /* 不阻塞选号：刷新结果回来后再覆盖右侧历史列表。 */
+  refreshHistory(false);
 }
 
 init();

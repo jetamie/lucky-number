@@ -1,18 +1,18 @@
 use rand::Rng;
 use serde::Serialize;
 
-const SSQ: &str = "ssq";
-const DLT: &str = "dlt";
+pub(crate) const SSQ: &str = "ssq";
+pub(crate) const DLT: &str = "dlt";
 const DEFAULT_COUNT: usize = 5;
 const MAX_COUNT: usize = 20;
 
 /// 玩法规则：前区/后区的号码上限与选取个数，全局只定义一次。
 #[derive(Clone, Copy)]
-struct Rule {
-    front_max: u32,
-    front_count: usize,
-    back_max: u32,
-    back_count: usize,
+pub(crate) struct Rule {
+    pub(crate) front_max: u32,
+    pub(crate) front_count: usize,
+    pub(crate) back_max: u32,
+    pub(crate) back_count: usize,
 }
 
 const SSQ_RULE: Rule = Rule {
@@ -38,7 +38,7 @@ pub struct Ticket {
     pub back: Vec<u32>,
 }
 
-fn rule_of(kind: &str) -> Option<Rule> {
+pub(crate) fn rule_of(kind: &str) -> Option<Rule> {
     match kind {
         SSQ => Some(SSQ_RULE),
         DLT => Some(DLT_RULE),

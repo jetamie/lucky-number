@@ -4,11 +4,11 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>幸运号码 · Lucky Number — 双色球 / 大乐透模拟选号</title>
-  <meta name="description" content="用 Tauri 2.0 写的双色球 / 大乐透模拟选号客户端。一键生成 5 注，选号由本地随机熵生成、全程离线；内置近期官方开奖号码仅供查阅，不做预测。" />
+  <meta name="description" content="用 Tauri 2.0 写的双色球 / 大乐透模拟选号客户端。一键生成 5 注，选号由本地随机熵生成、全程离线；近期官方开奖号码可联网更新，仅供查阅，不做预测。" />
   <meta name="theme-color" content="#080A14" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="幸运号码 · Lucky Number" />
-  <meta property="og:description" content="双色球 / 大乐透模拟选号 · 一键 5 注 · 本地随机 · 离线可用" />
+  <meta property="og:description" content="双色球 / 大乐透模拟选号 · 一键 5 注 · 选号离线 · 开奖数据可联网更新" />
   <meta property="og:image" content="icon.png" />
   <link rel="icon" href="icon.png" />
   <link rel="stylesheet" href="styles.css" />
@@ -43,9 +43,9 @@
   <main class="wrap">
     <section class="hero">
       <div class="hero-copy">
-        <span class="kicker"><i></i> TAURI 2.0 · 选号本地随机 · 内置近期开奖</span>
+        <span class="kicker"><i></i> TAURI 2.0 · 选号本地随机 · 开奖数据可联网更新</span>
         <h1 class="hero-title">把选择交给<br /><em>一点点运气</em></h1>
-        <p class="lead">双色球 / 大乐透模拟选号桌面客户端。点一下，5 注号码滚出来。选号由本地系统熵生成，不联网、不上传、不保存；侧栏另内置最近 10 期官方开奖号码，仅供查阅，不参与选号也不预测结果。</p>
+        <p class="lead">双色球 / 大乐透模拟选号桌面客户端。点一下，5 注号码滚出来。选号由本地系统熵生成，不联网、不上传、不保存；侧栏展示最近 10 期官方开奖号码，桌面端启动时自动更新、也可手动刷新，仅供查阅，不参与选号也不预测结果。</p>
         <div class="cta">
           <a class="btn btn-primary" href="./app/"><span class="btn-star" aria-hidden="true">✦</span> 在线试一试 <span class="btn-arrow" aria-hidden="true">→</span></a>
           <a class="btn btn-ghost" href="https://github.com/jetamie/lucky-number/releases/latest">下载桌面版</a>
@@ -93,7 +93,7 @@
         <article class="feature-card"><span class="fc-icon icon-gold" aria-hidden="true">✦</span><h3>一键生成 5 注</h3><p>号码球滚动开奖动画，每次结果独立随机，同区号码不重复且升序排列。</p></article>
         <article class="feature-card"><span class="fc-icon icon-blue" aria-hidden="true">◧</span><h3>复制与快捷键</h3><p>复制单注 / 复制全部 / 清空，空格或回车即可再生成一轮。</p></article>
         <article class="feature-card"><span class="fc-icon icon-violet" aria-hidden="true">▤</span><h3>号码热度</h3><p>汇总本次会话各号码出现频次，纯娱乐观察，不暗示任何趋势。</p></article>
-        <article class="feature-card"><span class="fc-icon icon-teal" aria-hidden="true">⊘</span><h3>离线优先</h3><p>选号来自本地系统熵源，全程无网络请求；网页版自动降级为 Web Crypto 本地随机，开奖数据随包内置。</p></article>
+        <article class="feature-card"><span class="fc-icon icon-teal" aria-hidden="true">⊘</span><h3>离线选号 · 开奖可更新</h3><p>选号来自本地系统熵源、全程无网络请求；桌面端另可在启动时联网刷新开奖数据，失败自动回退缓存或内置快照。网页版降级为 Web Crypto 随机并使用内置快照。</p></article>
         <article class="feature-card"><span class="fc-icon icon-amber" aria-hidden="true">◇</span><h3>三平台客户端</h3><p>Tauri 2.0 + Rust 后端，Windows / macOS / Linux 均有安装包，由 GitHub Actions 自动发布。</p></article>
       </div>
     </section>
@@ -113,7 +113,7 @@
           </tbody>
         </table>
       </div>
-      <p class="section-note">规则、抽样与边界校验都有 Rust 单元测试覆盖。网页版使用同一套规则，随机数改由浏览器本地生成。客户端侧栏同时展示最近 10 期官方开奖号码，随包内置、仅供查阅，不参与选号。</p>
+      <p class="section-note">规则、抽样与边界校验都有 Rust 单元测试覆盖。网页版使用同一套规则，随机数改由浏览器本地生成。客户端侧栏展示最近 10 期官方开奖号码：桌面端由 Rust 侧联网更新并缓存，网页版使用定时抓取的内置快照，均仅供查阅、不参与选号。</p>
     </section>
 
     <section class="section" id="download">
@@ -144,7 +144,7 @@
 
     <section class="notice" aria-label="理性提示">
       <span class="notice-icon" aria-hidden="true">!</span>
-      <div><b>理性提示</b><p>本工具仅用于模拟随机选号与娱乐，不预测开奖结果、不提供投注建议，也不与任何彩票机构关联。内置历史开奖数据来自官方公告、仅供查阅，请以官方发布为准。购彩有风险，未成年人不得购彩，请理性对待、量力而行。</p></div>
+      <div><b>理性提示</b><p>本工具仅用于模拟随机选号与娱乐，不预测开奖结果、不提供投注建议，也不与任何彩票机构关联。选号全程离线、不上传数据；开奖数据仅从官方公告域名读取、仅供查阅，请以官方发布为准。购彩有风险，未成年人不得购彩，请理性对待、量力而行。</p></div>
     </section>
   </main>
 

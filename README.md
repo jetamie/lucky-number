@@ -3,7 +3,7 @@
 
   # 幸运号码 · Lucky Number
 
-  **双色球 / 大乐透模拟选号桌面客户端** · 一键生成 5 注 · 选号本地随机 · 内置近期开奖
+  **双色球 / 大乐透模拟选号桌面客户端** · 一键生成 5 注 · 选号本地随机 · 开奖数据可联网更新
 
   [![Tauri 2.0](https://img.shields.io/badge/Tauri-2.0-24C8DB?logo=tauri&amp;logoColor=white)](https://tauri.app/)
   [![Rust](https://img.shields.io/badge/Rust-stable-orange?logo=rust&amp;logoColor=white)](https://www.rust-lang.org/)
@@ -15,7 +15,7 @@
 
 ## 简介
 
-一个用 **Tauri 2.0** 写的轻量桌面小工具：切换双色球或大乐透，点一下就生成 5 注号码。选号随机数来自本地系统熵源，不联网、不上传、不保存任何数据；另内置最近 10 期官方开奖号码，仅供查阅，不参与选号，也不含任何预测逻辑。
+一个用 **Tauri 2.0** 写的轻量桌面小工具：切换双色球或大乐透，点一下就生成 5 注号码。选号随机数来自本地系统熵源，**选号过程完全离线、不上传任何数据**；侧栏展示最近 10 期官方开奖号码，桌面端启动时会联网更新一次（也可手动刷新），失败自动回退本地缓存或随包内置的快照。开奖数据仅供查阅，不参与选号，也不含任何预测逻辑。
 
 界面是深空紫黑底 + 玻璃拟态卡片 + 立体号码球，无前端框架、无构建步骤，`frontendDist` 直接指向 `src/`。直接用浏览器打开 `src/index.html` 也能看到完整界面，此时会自动降级为 Web Crypto 本地随机。
 
@@ -31,8 +31,9 @@
 | 快捷键 | `空格` / `回车` 快速生成 |
 | 热度统计 | 汇总本次会话各号码出现频次 |
 | 近期开奖 | 侧栏展示最近 10 期双色球 / 大乐透官方开奖号码，跟随玩法切换，仅供查阅 |
+| 开奖数据更新 | 桌面端启动时自动联网刷新 + 右上角 ↻ 手动刷新；结果写入本机缓存，失败回退缓存 / 内置快照 |
 | 玩法速览 | 内置规则说明与理性购彩提示 |
-| 离线优先 | 选号过程无网络请求；桌面命令异常时前端自动降级，不会白屏 |
+| 离线优先 | **选号**无网络请求；仅开奖数据更新访问官方公告域名，桌面命令异常时前端自动降级，不会白屏 |
 
 ### 玩法规则
 
@@ -80,24 +81,29 @@ cd src-tauri && cargo test --release --lib   # 选号算法单元测试
 ├── src/                          # 前端（纯静态，零构建）
 │   ├── index.html
 │   ├── styles.css
-│   ├── app.js                    # 交互、动画、降级随机逻辑
+│   ├── app.js                    # 交互、动画、降级随机、开奖数据刷新
 │   └── data/
 │       ├── history.json          # 官方开奖数据（CI 自动更新）
-│       └── history.js            # 前端只读加载，避免协议兼容问题
+│       └── history.js            # 内置快照，避免自定义协议兼容问题
 ├── src-tauri/
 │   ├── src/
 │   │   ├── main.rs               # 入口
 │   │   ├── lib.rs                # Tauri Builder / 命令注册
-│   │   └── lottery.rs            # 玩法规则 + 等概率抽样 + 单元测试
+│   │   ├── lottery.rs            # 玩法规则 + 等概率抽样 + 单元测试
+│   │   └── history.rs            # 官方公告抓取、校验、本机缓存 + 单元测试
 │   ├── tauri.conf.json           # 主配置（窗口、图标、bundle）
 │   ├── tauri.windows.conf.json   # Windows: nsis
 │   ├── tauri.linux.conf.json     # Linux: deb + appimage
 │   ├── tauri.macos.conf.json     # macOS: dmg + app
-│   ├── capabilities/default.json
+│   ├── capabilities/default.json # 只开 core:default，网络走 Rust 侧
 │   ├── icons/                    # ico / icns / png
-│   └── Cargo.toml
+│   └── Cargo.toml                # tauri / rand / serde / reqwest(rustls)
+├── site/                         # GitHub Pages 落地页
 ├── scripts/ci/                   # 发布流水线辅助脚本（Node，无第三方依赖）
-└── .github/workflows/release.yml # 三平台自动发布
+└── .github/workflows/
+    ├── release.yml               # 三平台自动发布
+    ├── pages.yml                 # Pages 部署
+    └── history.yml               # 每天抓取开奖数据（供网页版使用）
 ```
 
 ## 选号是怎么实现的
@@ -108,16 +114,33 @@ cd src-tauri && cargo test --release --lib   # 选号算法单元测试
 [{ "id": 1, "kind": "ssq", "front": [3, 8, 12, 19, 26, 31], "back": [9] }]
 ```
 
-规则常量、抽样算法与边界校验都有 Rust 单元测试覆盖（号码范围、升序无重复、两种玩法各 5 注、非法参数拒绝）。
+规则常量、抽样算法与边界校验都有 Rust 单元测试覆盖（号码范围、升序无重复、两种玩法各 5 注、非法参数拒绝）。`history.rs` 的解析与校验另有单测，合计 9 项，跑 `cd src-tauri && cargo test --release --lib` 即可验证；开奖数据更新是另一条独立命令 `refresh_history`，不干扰抽样。
 
 ## 历史开奖数据
 
-`src/data/history.json` 是数据真相，`src/data/history.js` 把它挂到 `window.LUCKY_HISTORY` 供前端只读加载（避免 Tauri 自定义协议下 `fetch` 静态 JSON 的兼容问题）。两个文件都由 `scripts/ci/fetch-history.mjs` 生成，**不要手动编辑**。
+数据只用于侧栏展示，**不参与 `generate_tickets` 的随机抽样**，不做冷热号、遗漏值或任何号码推荐，以官方公告为准。
 
-- **来源**：中国福利彩票开奖公告（双色球）、中国体育彩票开奖公告（大乐透），各取最近 10 期。
-- **更新**：`.github/workflows/history.yml` 每天北京时间 22:30 抓取，按玩法规则严格校验（号码范围、个数、升序无重复、期号递减、日期格式）后写回；无新期号则不提交。任一路失败会保留该玩法原有数据，两路全失败则不写文件并让任务失败。
-- **分发**：数据文件放在 `src/` 内，Tauri 打包时自动内嵌，Pages 构建时自动复制；CI 提交后会显式触发 Pages 重新部署。网页版能拿到最新数据，**桌面端是发版时的快照**，更新数据需重新发版。
-- **边界**：历史数据只用于侧栏展示，**不参与 `generate_tickets` 的随机抽样**，不做冷热号、遗漏值或任何号码推荐。数据以官方公告为准。
+### 两条更新链路
+
+| 渠道 | 数据来源 | 更新时机 |
+| --- | --- | --- |
+| 桌面客户端 | Rust 侧 `refresh_history` 命令直连官方公告接口 | 启动自动刷新一次 + 右上角 ↻ 手动刷新 |
+| 网页版 / 内置快照 | `src/data/history.js` → `window.LUCKY_HISTORY` | `.github/workflows/history.yml` 每天北京时间 22:30 抓取后提交，并触发 Pages 重新部署 |
+
+`src/data/history.json` 是内置快照的数据真相，`history.js` 把它挂到 `window.LUCKY_HISTORY`（避免 Tauri 自定义协议下 `fetch` 静态 JSON 的兼容问题）。两者都由 `scripts/ci/fetch-history.mjs` 生成，**不要手动编辑**。数据文件放在 `src/` 内，Tauri 打包时自动内嵌、Pages 构建时自动复制；CI 抓取同样按规则严格校验，无新期号不提交，任一路失败保留该玩法原有数据。
+
+### 桌面端为什么走 Rust 侧
+
+官方接口没有 `Access-Control-Allow-Origin`，WebView 里直接 `fetch` 会被 CORS 拦截；给 WebView 加 `http:default` 权限也解决不了，反而无谓放宽前端能力。因此请求由 Rust 侧 `reqwest`（rustls-tls）发出，`capabilities/default.json` 仍然只有 `core:default`。
+
+`invoke("refresh_history", { today })` 的行为：
+
+- 并发请求中国福利彩票开奖公告（双色球）与中国体育彩票开奖公告（大乐透），各取最近 10 期；体彩接口带 `Referer` / `Origin` 头绕过 WAF，单次请求 15 秒超时。
+- 复用 `lottery.rs` 的同一套规则严格校验：号码范围、个数、升序无重复、期号递减、日期格式；任一玩法异常就丢弃该路结果。
+- 成功结果写入 `app_data_dir()/history.json` 本机缓存；单路失败保留该玩法旧数据，两路全失败返回缓存，没有缓存则返回错误，由前端回退内置快照。
+- 状态角标区分「内置数据 / 在线更新 / 本地缓存」，启动刷新失败时静默保留当前数据，不影响选号。
+
+> 选号始终离线；开奖数据更新只访问 `www.cwl.gov.cn` 与 `webapi.sporttery.cn`，不上传任何本机信息。官方接口无 SLA，WAF 或页面结构变化可能导致失败，已按上面的顺序逐级降级。桌面端与网页版的数据可能短暂不一致，属正常现象。
 
 ## 版本与自动发布
 
@@ -136,4 +159,4 @@ cd src-tauri && cargo test --release --lib   # 选号算法单元测试
 
 [MIT](LICENSE) © 2026 jetamie
 
-本工具**仅用于模拟随机选号与娱乐**，不预测开奖结果、不提供投注建议，也不与任何彩票机构关联。内置历史开奖数据来自官方公告、仅供查阅，可能存在延迟或遗漏，请以官方发布为准。购彩有风险，未成年人不得购彩，请理性对待、量力而行。
+本工具**仅用于模拟随机选号与娱乐**，不预测开奖结果、不提供投注建议，也不与任何彩票机构关联。选号全程离线、不上传数据；开奖数据仅从官方公告域名读取，仅供查阅，可能存在延迟或遗漏，请以官方发布为准。购彩有风险，未成年人不得购彩，请理性对待、量力而行。

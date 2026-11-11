@@ -302,6 +302,26 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
 .fact-foot { margin-top: 12px; font-size: 10.5px; line-height: 1.6; color: var(--faint); }
 
 /* ---------- 近期开奖 ---------- */
+.history-tools { display: flex; align-items: center; gap: 9px; }
+.history-refresh {
+  width: 25px; height: 25px; flex: none; display: grid; place-items: center;
+  border-radius: 8px; border: 1px solid rgba(255, 201, 92, 0.28);
+  background: rgba(255, 201, 92, 0.08); color: var(--gold);
+  font: 700 15px/1 var(--mono); transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+.history-refresh:hover { background: rgba(255, 201, 92, 0.18); border-color: rgba(255, 201, 92, 0.55); transform: rotate(35deg); }
+.history-refresh:disabled { cursor: progress; opacity: 0.75; }
+.history-refresh.is-busy { animation: history-spin 0.85s linear infinite; }
+.history-refresh.is-busy:hover { transform: none; }
+.history-refresh[hidden] { display: none; }
+@keyframes history-spin { to { transform: rotate(360deg); } }
+
+#historyStatus { font-family: var(--mono); text-transform: none; }
+#historyStatus[data-state="builtin"] { color: var(--gold); background: rgba(255, 201, 92, 0.1); border-color: rgba(255, 201, 92, 0.2); }
+#historyStatus[data-state="online"] { color: var(--teal); background: rgba(77, 224, 190, 0.1); border-color: rgba(77, 224, 190, 0.28); }
+#historyStatus[data-state="cache"] { color: #9fb4ff; background: rgba(120, 150, 255, 0.1); border-color: rgba(120, 150, 255, 0.28); }
+#historyStatus[data-state="busy"] { color: #dbe0f2; background: rgba(255, 255, 255, 0.06); border-color: rgba(255, 255, 255, 0.16); }
+
 .history-list { display: flex; flex-direction: column; gap: 8px; max-height: 286px; overflow-y: auto; padding-right: 2px; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.18) transparent; }
 .history-row { padding: 9px 10px; border-radius: 11px; background: rgba(4, 6, 16, 0.32); border: 1px solid var(--line-soft); }
 .history-meta { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }

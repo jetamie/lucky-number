@@ -120,21 +120,31 @@
           <div class="fact-foot">号码由本地系统随机熵生成，每次结果互不影响。</div>
         </div>
 
+        <div class="panel history-panel">
+          <div class="panel-head">
+            <span class="eyebrow"><b>05</b> 近期开奖</span>
+            <span class="head-hint" id="historyCount">最近开奖</span>
+          </div>
+          <div class="history-list" id="historyList"></div>
+          <p class="history-note" id="historyNote">数据来自官方开奖公告，仅供查阅 · 以官方公告为准</p>
+        </div>
+
         <div class="notice-card">
           <div class="notice-icon" aria-hidden="true">!</div>
-          <p><b>理性提示</b><br />本工具仅用于模拟随机选号与娱乐，不预测开奖结果、不提供投注建议。购彩有风险，未成年人不得购彩，请理性对待、量力而行。</p>
+          <p><b>理性提示</b><br />本工具仅用于模拟随机选号与娱乐，不预测开奖结果、不提供投注建议；内置历史开奖数据仅供查阅，以官方公告为准。购彩有风险，未成年人不得购彩，请理性对待、量力而行。</p>
         </div>
       </aside>
     </main>
 
     <footer class="footer">
-      <span><i class="footer-dot"></i> TAURI 2.0 · 本地运行 · 不联网</span>
+      <span><i class="footer-dot"></i> TAURI 2.0 · 选号离线 · 开奖数据内置</span>
       <span>MADE FOR FUN ✦</span>
     </footer>
   </div>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <script src="data/history.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>

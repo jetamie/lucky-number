@@ -18,6 +18,8 @@ const RULES = {
 
 const PER_ROUND = 5;
 const $ = (id) => document.getElementById(id);
+/* 由 data/history.js 提供，随包内置；缺失时降级为空数据，不影响选号。 */
+const HISTORY = window.LUCKY_HISTORY || { ssq: [], dlt: [], updatedAt: "", source: {} };
 
 const state = {
   kind: "ssq",
@@ -186,6 +188,49 @@ function renderHot() {
   });
 }
 
+/* ---------- 近期开奖（只读展示，不参与任何选号逻辑） ---------- */
+function escapeText(value) {
+  return String(value).replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
+}
+
+function historyBalls(numbers, ballClass) {
+  if (!Array.isArray(numbers)) return "";
+  return numbers
+    .map((num) => `<span class="mini-ball ${ballClass}">${fmt(Number(num))}</span>`)
+    .join("");
+}
+
+function renderHistory() {
+  const rule = RULES[state.kind];
+  const rows = HISTORY[state.kind];
+  const list = $("historyList");
+  const count = $("historyCount");
+  const note = $("historyNote");
+
+  if (!Array.isArray(rows) || rows.length === 0) {
+    list.innerHTML = `<div class="history-empty">暂无开奖数据，等待自动更新</div>`;
+    count.textContent = "暂无数据";
+    note.textContent = "数据由定时任务更新，以官方公告为准";
+    return;
+  }
+
+  count.textContent = `最近 ${rows.length} 期 · ${rule.name}`;
+  list.innerHTML = rows
+    .map((row) => {
+      const front = historyBalls(row.front, rule.front.ball);
+      const back = historyBalls(row.back, rule.back.ball);
+      return `
+        <div class="history-row">
+          <div class="history-meta"><b>第 ${escapeText(row.issue)} 期</b><span>${escapeText(row.date)}</span></div>
+          <div class="history-balls">${front}<i class="mini-sep"></i>${back}</div>
+        </div>`;
+    })
+    .join("");
+
+  const source = (HISTORY.source && HISTORY.source[state.kind]) || "官方开奖公告";
+  note.textContent = `更新于 ${escapeText(HISTORY.updatedAt || "—")} · ${escapeText(source)} · 以官方公告为准`;
+}
+
 function ticketText(ticket) {
   return `${ticket.front.map(fmt).join(" ")}  |  ${ticket.back.map(fmt).join(" ")}`;
 }
@@ -231,6 +276,7 @@ function switchKind(kind) {
   state.tally = { front: {}, back: {} };
   renderRule();
   renderHot();
+  renderHistory();
   generate();
 }
 
@@ -317,6 +363,7 @@ function init() {
   bindEvents();
   renderRule();
   renderHot();
+  renderHistory();
   updateConnection();
   generate();
 }

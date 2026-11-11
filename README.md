@@ -3,7 +3,7 @@
 
   # 幸运号码 · Lucky Number
 
-  **双色球 / 大乐透模拟选号桌面客户端** · 一键生成 5 注 · 纯本地随机 · 全程离线
+  **双色球 / 大乐透模拟选号桌面客户端** · 一键生成 5 注 · 选号本地随机 · 内置近期开奖
 
   [![Tauri 2.0](https://img.shields.io/badge/Tauri-2.0-24C8DB?logo=tauri&amp;logoColor=white)](https://tauri.app/)
   [![Rust](https://img.shields.io/badge/Rust-stable-orange?logo=rust&amp;logoColor=white)](https://www.rust-lang.org/)
@@ -15,7 +15,7 @@
 
 ## 简介
 
-一个用 **Tauri 2.0** 写的轻量桌面小工具：切换双色球或大乐透，点一下就生成 5 注号码。随机数来自本地系统熵源，不联网、不上传、不保存任何数据，也不含开奖数据或「预测」逻辑。
+一个用 **Tauri 2.0** 写的轻量桌面小工具：切换双色球或大乐透，点一下就生成 5 注号码。选号随机数来自本地系统熵源，不联网、不上传、不保存任何数据；另内置最近 10 期官方开奖号码，仅供查阅，不参与选号，也不含任何预测逻辑。
 
 界面是深空紫黑底 + 玻璃拟态卡片 + 立体号码球，无前端框架、无构建步骤，`frontendDist` 直接指向 `src/`。直接用浏览器打开 `src/index.html` 也能看到完整界面，此时会自动降级为 Web Crypto 本地随机。
 
@@ -30,8 +30,9 @@
 | 复制与清空 | 复制单注、复制全部、清空结果（会话热度统计保留） |
 | 快捷键 | `空格` / `回车` 快速生成 |
 | 热度统计 | 汇总本次会话各号码出现频次 |
+| 近期开奖 | 侧栏展示最近 10 期双色球 / 大乐透官方开奖号码，跟随玩法切换，仅供查阅 |
 | 玩法速览 | 内置规则说明与理性购彩提示 |
-| 离线优先 | 无网络请求；桌面命令异常时前端自动降级，不会白屏 |
+| 离线优先 | 选号过程无网络请求；桌面命令异常时前端自动降级，不会白屏 |
 
 ### 玩法规则
 
@@ -79,7 +80,10 @@ cd src-tauri && cargo test --release --lib   # 选号算法单元测试
 ├── src/                          # 前端（纯静态，零构建）
 │   ├── index.html
 │   ├── styles.css
-│   └── app.js                    # 交互、动画、降级随机逻辑
+│   ├── app.js                    # 交互、动画、降级随机逻辑
+│   └── data/
+│       ├── history.json          # 官方开奖数据（CI 自动更新）
+│       └── history.js            # 前端只读加载，避免协议兼容问题
 ├── src-tauri/
 │   ├── src/
 │   │   ├── main.rs               # 入口
@@ -106,6 +110,15 @@ cd src-tauri && cargo test --release --lib   # 选号算法单元测试
 
 规则常量、抽样算法与边界校验都有 Rust 单元测试覆盖（号码范围、升序无重复、两种玩法各 5 注、非法参数拒绝）。
 
+## 历史开奖数据
+
+`src/data/history.json` 是数据真相，`src/data/history.js` 把它挂到 `window.LUCKY_HISTORY` 供前端只读加载（避免 Tauri 自定义协议下 `fetch` 静态 JSON 的兼容问题）。两个文件都由 `scripts/ci/fetch-history.mjs` 生成，**不要手动编辑**。
+
+- **来源**：中国福利彩票开奖公告（双色球）、中国体育彩票开奖公告（大乐透），各取最近 10 期。
+- **更新**：`.github/workflows/history.yml` 每天北京时间 22:30 抓取，按玩法规则严格校验（号码范围、个数、升序无重复、期号递减、日期格式）后写回；无新期号则不提交。任一路失败会保留该玩法原有数据，两路全失败则不写文件并让任务失败。
+- **分发**：数据文件放在 `src/` 内，Tauri 打包时自动内嵌，Pages 构建时自动复制；CI 提交后会显式触发 Pages 重新部署。网页版能拿到最新数据，**桌面端是发版时的快照**，更新数据需重新发版。
+- **边界**：历史数据只用于侧栏展示，**不参与 `generate_tickets` 的随机抽样**，不做冷热号、遗漏值或任何号码推荐。数据以官方公告为准。
+
 ## 版本与自动发布
 
 版本号固定为 **`1.x.x`**。`.github/workflows/release.yml` 支持两种触发方式：
@@ -117,10 +130,10 @@ cd src-tauri && cargo test --release --lib   # 选号算法单元测试
 
 > 首次运行前请确认仓库 `Settings → Actions → General → Workflow permissions` 为 **Read and write**，否则创建 Release 会被拒绝。
 
-`scripts/ci/` 下 5 个 Node 脚本（零依赖）分别是：`version.mjs` 版本解析、`sync-version.mjs` 版本同步、`release-notes.mjs` 按 git log 分组生成说明、`collect.mjs` 产物归集重命名、`checksums.mjs` 生成校验和。Release 说明同时作为 `RELEASE_NOTES.md` 资产上传。
+`scripts/ci/` 下 6 个 Node 脚本（零依赖）分别是：`version.mjs` 版本解析、`sync-version.mjs` 版本同步、`release-notes.mjs` 按 git log 分组生成说明、`collect.mjs` 产物归集重命名、`checksums.mjs` 生成校验和、`fetch-history.mjs` 抓取并校验开奖数据。Release 说明同时作为 `RELEASE_NOTES.md` 资产上传。
 
 ## 许可与声明
 
 [MIT](LICENSE) © 2026 jetamie
 
-本工具**仅用于模拟随机选号与娱乐**，不预测开奖结果、不提供投注建议，也不与任何彩票机构关联。购彩有风险，未成年人不得购彩，请理性对待、量力而行。
+本工具**仅用于模拟随机选号与娱乐**，不预测开奖结果、不提供投注建议，也不与任何彩票机构关联。内置历史开奖数据来自官方公告、仅供查阅，可能存在延迟或遗漏，请以官方发布为准。购彩有风险，未成年人不得购彩，请理性对待、量力而行。

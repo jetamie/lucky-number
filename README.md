@@ -9,6 +9,7 @@
   [![Rust](https://img.shields.io/badge/Rust-stable-orange?logo=rust&amp;logoColor=white)](https://www.rust-lang.org/)
   [![Platform](https://img.shields.io/badge/平台-Windows%20%7C%20macOS%20%7C%20Linux-5865F2)](#下载与运行)
   [![Version](https://img.shields.io/badge/版本-1.x.x-blueviolet)](#版本与自动发布)
+  [![Pages](https://img.shields.io/badge/GitHub%20Pages-在线预览-5865F2)](https://jetamie.github.io/lucky-number/)
   [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
 </div>
 
@@ -17,6 +18,8 @@
 一个用 **Tauri 2.0** 写的轻量桌面小工具：切换双色球或大乐透，点一下就生成 5 注号码。随机数来自本地系统熵源，不联网、不上传、不保存任何数据，也不含开奖数据或「预测」逻辑。
 
 界面是深空紫黑底 + 玻璃拟态卡片 + 立体号码球，无前端框架、无构建步骤，`frontendDist` 直接指向 `src/`。直接用浏览器打开 `src/index.html` 也能看到完整界面，此时会自动降级为 Web Crypto 本地随机。
+
+**在线站点**：<https://jetamie.github.io/lucky-number/>（项目介绍与下载入口），<https://jetamie.github.io/lucky-number/app/>（浏览器版选号，可直接试用）。站点由 [Pages 流水线](.github/workflows/pages.yml) 从 `site/` 与 `src/` 组装发布，`push` 到 `main` 相关路径时自动更新。
 
 ## 功能
 

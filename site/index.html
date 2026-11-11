@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>幸运号码 · Lucky Number — 双色球 / 大乐透模拟选号</title>
+  <meta name="description" content="用 Tauri 2.0 写的双色球 / 大乐透模拟选号客户端。一键生成 5 注，号码由本地随机熵生成，全程离线、不联网、不预测。" />
+  <meta name="theme-color" content="#080A14" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="幸运号码 · Lucky Number" />
+  <meta property="og:description" content="双色球 / 大乐透模拟选号 · 一键 5 注 · 本地随机 · 离线可用" />
+  <meta property="og:image" content="icon.png" />
+  <link rel="icon" href="icon.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="ambient" aria-hidden="true">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="mesh"></div>
+  </div>
+
+  <header class="nav wrap">
+    <a class="brand" href="./" aria-label="幸运号码首页">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 48 48" fill="none">
+          <path d="M24 3.5 28.4 17.2 42 13.8 31.1 23.6 42 33.4 28.4 30 24 43.7 19.6 30 6 33.4 16.9 23.6 6 13.8 19.6 17.2 24 3.5Z" fill="url(#star)"/>
+          <circle cx="24" cy="23.6" r="4.1" fill="#0B0D1A"/>
+          <defs><linearGradient id="star" x1="6" y1="3" x2="42" y2="44" gradientUnits="userSpaceOnUse"><stop stop-color="#FFE9A8"/><stop offset=".5" stop-color="#FFC24D"/><stop offset="1" stop-color="#FF7A5C"/></linearGradient></defs>
+        </svg>
+      </span>
+      <span class="brand-copy"><b>LUCKY <em>NUMBER</em></b><small>幸运号码实验室</small></span>
+    </a>
+    <nav class="nav-links" aria-label="主导航">
+      <a href="./app/">在线试用</a>
+      <a href="#features">功能</a>
+      <a href="#download">下载</a>
+      <a class="nav-github" href="https://github.com/jetamie/lucky-number">GitHub <span aria-hidden="true">↗</span></a>
+    </nav>
+  </header>
+
+  <main class="wrap">
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="kicker"><i></i> TAURI 2.0 · 本地随机 · 全程离线</span>
+        <h1 class="hero-title">把选择交给<br /><em>一点点运气</em></h1>
+        <p class="lead">双色球 / 大乐透模拟选号桌面客户端。点一下，5 注号码滚出来。号码由本地系统熵生成，不联网、不上传、不保存，也不预测任何开奖结果。</p>
+        <div class="cta">
+          <a class="btn btn-primary" href="./app/"><span class="btn-star" aria-hidden="true">✦</span> 在线试一试 <span class="btn-arrow" aria-hidden="true">→</span></a>
+          <a class="btn btn-ghost" href="https://github.com/jetamie/lucky-number/releases/latest">下载桌面版</a>
+        </div>
+        <div class="badges">
+          <span class="badge">5 注 / 次</span>
+          <span class="badge">等概率不放回抽样</span>
+          <span class="badge">Windows · macOS · Linux</span>
+          <span class="badge">MIT</span>
+        </div>
+      </div>
+
+      <div class="hero-visual" aria-hidden="true">
+        <div class="visual-card">
+          <div class="vc-head"><span>第 01 注 · 双色球</span><b>模拟</b></div>
+          <div class="vc-body">
+            <div class="vc-label">红球 <small>01–33 选 6</small></div>
+            <div class="balls">
+              <span class="ball red" style="--d:0">03</span>
+              <span class="ball red" style="--d:1">08</span>
+              <span class="ball red" style="--d:2">12</span>
+              <span class="ball red" style="--d:3">19</span>
+              <span class="ball red" style="--d:4">26</span>
+              <span class="ball red" style="--d:5">31</span>
+              <span class="sep"></span>
+              <span class="ball blue" style="--d:6">09</span>
+            </div>
+            <div class="vc-label">蓝球 <small>01–16 选 1</small></div>
+          </div>
+          <div class="vc-foot"><i></i> 每次结果互不影响 · 号码仅存在于本地</div>
+        </div>
+        <div class="float-chip chip-a"><b>5</b><span>注 / 次</span></div>
+        <div class="float-chip chip-b"><b>0</b><span>次网络请求</span></div>
+      </div>
+    </section>
+
+    <section class="section" id="features">
+      <div class="section-head">
+        <span class="eyebrow">01 / 功能</span>
+        <h2>简单到只有一次点击</h2>
+        <p>没有账号、没有开奖数据、没有「预测模型」。该有的小细节都做了。</p>
+      </div>
+      <div class="feature-grid">
+        <article class="feature-card"><span class="fc-icon icon-red" aria-hidden="true">◉</span><h3>双玩法切换</h3><p>双色球 33 选 6 + 16 选 1，大乐透 35 选 5 + 12 选 2，规则常量只定义一次。</p></article>
+        <article class="feature-card"><span class="fc-icon icon-gold" aria-hidden="true">✦</span><h3>一键生成 5 注</h3><p>号码球滚动开奖动画，每次结果独立随机，同区号码不重复且升序排列。</p></article>
+        <article class="feature-card"><span class="fc-icon icon-blue" aria-hidden="true">◧</span><h3>复制与快捷键</h3><p>复制单注 / 复制全部 / 清空，空格或回车即可再生成一轮。</p></article>
+        <article class="feature-card"><span class="fc-icon icon-violet" aria-hidden="true">▤</span><h3>号码热度</h3><p>汇总本次会话各号码出现频次，纯娱乐观察，不暗示任何趋势。</p></article>
+        <article class="feature-card"><span class="fc-icon icon-teal" aria-hidden="true">⊘</span><h3>离线优先</h3><p>随机数来自本地系统熵源，全程无网络请求；网页版自动降级为 Web Crypto 本地随机。</p></article>
+        <article class="feature-card"><span class="fc-icon icon-amber" aria-hidden="true">◇</span><h3>三平台客户端</h3><p>Tauri 2.0 + Rust 后端，Windows / macOS / Linux 均有安装包，由 GitHub Actions 自动发布。</p></article>
+      </div>
+    </section>
+
+    <section class="section" id="rules">
+      <div class="section-head">
+        <span class="eyebrow">02 / 玩法</span>
+        <h2>号码怎么来的</h2>
+        <p>对 1..N 做部分 Fisher-Yates 洗牌，取前若干个后升序排列 —— 等概率、不放回。</p>
+      </div>
+      <div class="table-wrap">
+        <table class="rules-table">
+          <thead><tr><th>玩法</th><th>前区</th><th>后区</th><th>单注</th></tr></thead>
+          <tbody>
+            <tr><td><span class="tag tag-red">双色球</span></td><td>01–33 选 6 <small>红球</small></td><td>01–16 选 1 <small>蓝球</small></td><td>6 + 1</td></tr>
+            <tr><td><span class="tag tag-amber">大乐透</span></td><td>01–35 选 5 <small>前区</small></td><td>01–12 选 2 <small>后区</small></td><td>5 + 2</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="section-note">规则、抽样与边界校验都有 Rust 单元测试覆盖。网页版使用同一套规则，随机数改由浏览器本地生成。</p>
+    </section>
+
+    <section class="section" id="download">
+      <div class="section-head">
+        <span class="eyebrow">03 / 下载</span>
+        <h2>装到桌面上</h2>
+        <p>不想安装？<a href="./app/">直接在浏览器里试一试</a>，功能一样可用。</p>
+      </div>
+      <div class="download-grid">
+        <a class="dl-card" href="https://github.com/jetamie/lucky-number/releases/latest">
+          <span class="dl-icon" aria-hidden="true">▣</span><h3>Windows</h3>
+          <p class="dl-file">LuckyNumber-1.x.x-windows-x64-setup.exe</p>
+          <small>NSIS 安装包 / 另有免安装 exe · 需 WebView2</small>
+        </a>
+        <a class="dl-card" href="https://github.com/jetamie/lucky-number/releases/latest">
+          <span class="dl-icon" aria-hidden="true">◆</span><h3>macOS</h3>
+          <p class="dl-file">LuckyNumber-1.x.x-macos-universal.dmg</p>
+          <small>Intel / Apple Silicon 通用 · 未签名，首次打开需手动允许</small>
+        </a>
+        <a class="dl-card" href="https://github.com/jetamie/lucky-number/releases/latest">
+          <span class="dl-icon" aria-hidden="true">▤</span><h3>Linux</h3>
+          <p class="dl-file">LuckyNumber-1.x.x-linux-amd64.AppImage</p>
+          <small>另有 .deb · 需 libwebkit2gtk-4.1</small>
+        </a>
+      </div>
+      <p class="section-note">所有资产附 <code>SHA256SUMS.txt</code> 校验和，版本号固定 <code>1.x.x</code>，由 <a href="https://github.com/jetamie/lucky-number/actions/workflows/release.yml">Release 流水线</a> 三平台并行构建。</p>
+    </section>
+
+    <section class="notice" aria-label="理性提示">
+      <span class="notice-icon" aria-hidden="true">!</span>
+      <div><b>理性提示</b><p>本工具仅用于模拟随机选号与娱乐，不预测开奖结果、不提供投注建议，也不与任何彩票机构关联。购彩有风险，未成年人不得购彩，请理性对待、量力而行。</p></div>
+    </section>
+  </main>
+
+  <footer class="footer wrap">
+    <span>幸运号码 · Lucky Number <i class="footer-dot"></i> Tauri 2.0 + Rust + 纯静态前端</span>
+    <span><a href="https://github.com/jetamie/lucky-number">GitHub</a> · <a href="https://github.com/jetamie/lucky-number/blob/main/LICENSE">MIT</a> · MADE FOR FUN ✦</span>
+  </footer>
+</body>
+</html>

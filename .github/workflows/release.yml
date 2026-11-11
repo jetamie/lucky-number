@@ -145,6 +145,61 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  # iOS 没有 Apple Developer 证书，只能产出未签名 IPA 供侧载。
+  # 它独立于桌面端矩阵：Xcode / 官方工具链的波动不影响 Windows / Linux / macOS 发版。
+  ios:
+    name: 打包 iOS（未签名 IPA，可选）
+    needs: prepare
+    runs-on: macos-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+          key: ios
+
+      - name: 同步版本号
+        run: node scripts/ci/sync-version.mjs "${{ needs.prepare.outputs.version }}"
+
+      - name: 安装依赖
+        run: npm ci
+
+      - name: 构建未签名 IPA
+        run: node scripts/ci/build-ios.mjs
+
+      - name: 归集产物
+        run: node scripts/ci/collect.mjs ios "${{ needs.prepare.outputs.version }}" dist-release
+
+      - name: 生成 iOS 校验和
+        run: node scripts/ci/checksums.mjs dist-release SHA256SUMS-ios.txt
+
+      # 名字不以 bundles- 开头：publish 用 pattern: bundles-* 归集桌面端资产，
+      # 避免这份可选的 iOS 产物混进桌面端的 SHA256SUMS.txt。
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: dist-release/*
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: 上传到 Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ needs.prepare.outputs.tag }}
+        run: gh release upload "$TAG" dist-release/* --clobber
+
   publish:
     name: 上传产物并发布
     needs: [prepare, build]

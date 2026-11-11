@@ -67,19 +67,23 @@ ${changes}
 | macOS | \`${prefix}-macos-universal.dmg\` | Intel / Apple Silicon 通用包 |
 | Linux x64 | \`${prefix}-linux-amd64.AppImage\` | 免安装，需 WebKit2GTK 4.1 |
 | Linux x64 | \`${prefix}-linux-amd64.deb\` | Debian / Ubuntu 安装包 |
-| 校验和 | \`SHA256SUMS.txt\` | 校验下载完整性 |
+| iOS（未签名） | \`${prefix}-ios-unsigned.ipa\` | 需侧载工具安装，不进 App Store；另附 \`SHA256SUMS-ios.txt\` |
+| 校验和 | \`SHA256SUMS.txt\` | 校验桌面端资产完整性 |
 
 ## 运行要求
 
 - Windows 需 WebView2 Runtime（Windows 10/11 通常已内置）。
 - Linux 需 \`libwebkit2gtk-4.1\`，Ubuntu 22.04 / Debian 12 及以上可直接安装依赖。
 - macOS 包未做开发者签名与公证，首次打开请在「系统设置 → 隐私与安全性」中允许，或右键选择「打开」。
+- iOS 包为**未签名 IPA**，需通过 AltStore / SideStore 等侧载工具用自有 Apple ID 重签后安装，未上架 App Store，也不能直接装到未越狱设备。
+
+> iOS 构建在流水线中是独立可选任务：Xcode 工具链波动导致失败时，不影响 Windows / Linux / macOS 三个桌面端资产发布。
 
 ## 构建信息
 
 - 版本：\`${version}\`
 - Commit：\`${sha}\`
-- 工具链：Tauri 2.0 / Rust stable / Node 22，由 GitHub Actions 三平台并行构建
+- 工具链：Tauri 2.0 / Rust stable / Node 22，桌面端由 GitHub Actions 三平台并行构建，iOS 为独立可选任务
 
 ## 理性提示
 

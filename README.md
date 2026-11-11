@@ -7,7 +7,7 @@
 
   [![Tauri 2.0](https://img.shields.io/badge/Tauri-2.0-24C8DB?logo=tauri&amp;logoColor=white)](https://tauri.app/)
   [![Rust](https://img.shields.io/badge/Rust-stable-orange?logo=rust&amp;logoColor=white)](https://www.rust-lang.org/)
-  [![Platform](https://img.shields.io/badge/平台-Windows%20%7C%20macOS%20%7C%20Linux-5865F2)](#下载与运行)
+  [![Platform](https://img.shields.io/badge/平台-Windows%20%7C%20macOS%20%7C%20Linux%20%7C%20iOS-5865F2)](#下载与运行)
   [![Version](https://img.shields.io/badge/版本-1.x.x-blueviolet)](#版本与自动发布)
   [![Pages](https://img.shields.io/badge/GitHub%20Pages-在线预览-5865F2)](https://jetamie.github.io/lucky-number/)
   [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
@@ -53,13 +53,24 @@
 | macOS | `LuckyNumber-1.x.x-macos-universal.dmg` | Intel / Apple Silicon 通用包 |
 | Linux x64 | `LuckyNumber-1.x.x-linux-amd64.AppImage` | 免安装，需 WebKit2GTK 4.1 |
 | Linux x64 | `LuckyNumber-1.x.x-linux-amd64.deb` | Debian / Ubuntu 安装包 |
-| 校验和 | `SHA256SUMS.txt` | 校验下载完整性 |
+| iOS（未签名） | `LuckyNumber-1.x.x-ios-unsigned.ipa` | 需侧载工具安装，不进 App Store；另附 `SHA256SUMS-ios.txt` |
+| 校验和 | `SHA256SUMS.txt` | 校验桌面端资产完整性 |
 
 运行要求：
 
 - **Windows**：需 WebView2 Runtime（Windows 10/11 通常已内置）。
 - **Linux**：需 `libwebkit2gtk-4.1`，Ubuntu 22.04 / Debian 12 及以上可直接安装依赖。
 - **macOS**：包未做开发者签名与公证，首次打开请在「系统设置 → 隐私与安全性」中允许，或右键选择「打开」。
+- **iOS**：未签名 IPA，需通过 AltStore / SideStore 等侧载工具用自有 Apple ID 重签后安装，未上架 App Store，不能直接装到未越狱设备。
+
+### iOS 未签名包
+
+仓库没有 Apple Developer 证书，所以 iOS 走「能打出来、但不上架」的路线：`scripts/ci/build-ios.mjs` 先 `tauri ios init` 生成 Xcode 工程，把自动签名改成 Manual 并设 `CODE_SIGNING_ALLOWED=NO`；`tauri ios build` 的 `exportArchive` 阶段因缺少签名必然失败，但 archive 阶段产出的 `.app` 是完整的，脚本再按 IPA 规范把它打进 `Payload/` 目录。
+
+- 目标只编译 `aarch64`（真机 ARM64），不产出模拟器包；前端沿用现有响应式布局，未针对 iOS 专门适配。
+- 生成的 Xcode 工程在 `src-tauri/gen/apple/`，由 CI 每次现场生成、不入库。
+- iOS 是 Release 流水线里的**独立可选任务**（`continue-on-error`），产物自行上传到同一个 Release 并附带 `SHA256SUMS-ios.txt`；Xcode 版本或工具链波动导致失败，**不影响桌面端发版**。
+- 若以后要可上架 / TestFlight 的签名 IPA，需注册 Apple Developer 账号，并为流水线配置 `IOS_CERTIFICATE`、`IOS_CERTIFICATE_PASSWORD`、`IOS_MOBILE_PROVISION` 等 secrets，改用 `--export-method app-store-connect`。
 
 ## 本地开发
 
@@ -99,9 +110,10 @@ cd src-tauri && cargo test --release --lib   # 选号算法单元测试
 │   ├── icons/                    # ico / icns / png
 │   └── Cargo.toml                # tauri / rand / serde / reqwest(rustls)
 ├── site/                         # GitHub Pages 落地页
-├── scripts/ci/                   # 发布流水线辅助脚本（Node，无第三方依赖）
+├── scripts/ci/                   # 发布与构建脚本（Node，零第三方依赖）
+│   └── build-ios.mjs             # iOS 未签名 IPA（仅 macOS 可用）
 └── .github/workflows/
-    ├── release.yml               # 三平台自动发布
+    ├── release.yml               # 三平台自动发布 + 独立 iOS 任务
     ├── pages.yml                 # Pages 部署
     └── history.yml               # 每天抓取开奖数据（供网页版使用）
 ```
@@ -149,11 +161,13 @@ cd src-tauri && cargo test --release --lib   # 选号算法单元测试
 - **手动**：Actions → `Release` → Run workflow。版本号可填 `1.1.0`，留空则按最新 `v1.*.*` tag 自动递增补丁号（无 tag 时为 `1.0.0`）；可勾选「仅生成草稿」。
 - **推送 tag**：`git tag v1.1.0 && git push origin v1.1.0`，版本号以 tag 为准。
 
-流程分三段：`prepare`（算版本 → 同步到 5 个版本文件 → 生成 Release 说明 → 建草稿）→ `build`（Windows / Linux / macOS 三平台并行，macOS 用 `universal-apple-darwin`）→ `publish`（汇总资产、生成 `SHA256SUMS.txt`、上传、去掉草稿）。**任一平台打包失败就停在草稿，不会发布残缺版本**。只使用内置 `GITHUB_TOKEN`，无需额外 secrets。
+流程分三段：`prepare`（算版本 → 同步到 5 个版本文件 → 生成 Release 说明 → 建草稿）→ `build`（Windows / Linux / macOS 三平台并行，macOS 用 `universal-apple-darwin`）→ `publish`（汇总资产、生成 `SHA256SUMS.txt`、上传、去掉草稿）。**桌面端任一平台打包失败就停在草稿，不会发布残缺版本**。只使用内置 `GITHUB_TOKEN`，无需额外 secrets。
+
+iOS 另有独立的 `ios` job：只依赖 `prepare`，构建未签名 IPA 后自行上传到同一个 Release，并生成 `SHA256SUMS-ios.txt`。它设了 `continue-on-error`，**失败不阻塞桌面端发版**；产物用 `ios-ipa` 这个 artifact 名，因此不会被 `publish` 的 `bundles-*` 归集混进桌面端校验和。
 
 > 首次运行前请确认仓库 `Settings → Actions → General → Workflow permissions` 为 **Read and write**，否则创建 Release 会被拒绝。
 
-`scripts/ci/` 下 6 个 Node 脚本（零依赖）分别是：`version.mjs` 版本解析、`sync-version.mjs` 版本同步、`release-notes.mjs` 按 git log 分组生成说明、`collect.mjs` 产物归集重命名、`checksums.mjs` 生成校验和、`fetch-history.mjs` 抓取并校验开奖数据。Release 说明同时作为 `RELEASE_NOTES.md` 资产上传。
+`scripts/ci/` 下 7 个 Node 脚本（零依赖）分别是：`version.mjs` 版本解析、`sync-version.mjs` 版本同步、`release-notes.mjs` 按 git log 分组生成说明、`collect.mjs` 产物归集重命名（含 iOS）、`checksums.mjs` 生成校验和（可指定输出名）、`fetch-history.mjs` 抓取并校验开奖数据、`build-ios.mjs` 在 macOS 上打未签名 IPA。Release 说明同时作为 `RELEASE_NOTES.md` 资产上传。
 
 ## 许可与声明
 

@@ -26,6 +26,9 @@ const specs = {
       `${prefix}-macos-universal.dmg`,
     ],
   ],
+  ios: [
+    ["ios-artifacts", (name) => name.endsWith(".ipa"), `${prefix}-ios-unsigned.ipa`],
+  ],
 };
 
 if (!specs[platform] || !/^1\.\d+\.\d+$/.test(version || "")) {

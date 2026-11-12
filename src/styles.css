@@ -245,8 +245,9 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
   animation: ballPop 0.5s cubic-bezier(0.2, 0.9, 0.25, 1.35) both;
   animation-delay: var(--delay, 0ms);
 }
+/* 高光用百分比定位，球径缩小时会等比缩放（桌面端 42px 下与原来的 5/8/15/9px 一致）。 */
 .ball::after {
-  content: ""; position: absolute; top: 5px; left: 8px; width: 15px; height: 9px;
+  content: ""; position: absolute; top: 12%; left: 19%; width: 36%; height: 21%;
   border-radius: 50%; background: rgba(255, 255, 255, 0.55);
   filter: blur(2px); transform: rotate(-28deg);
 }
@@ -382,4 +383,50 @@ button:focus-visible { outline: 2px solid var(--gold); outline-offset: 3px; }
   .mini-ball { width: 21px; height: 21px; font-size: 9px; }
   .history-list { max-height: 240px; }
   .ticket { gap: 9px; padding: 11px; }
+}
+
+/* ---------- 手机端：注单改两行网格，保证后区（蓝 / 紫）球永远可见 ----------
+ * 根因：.ticket 是单行 flex + overflow:hidden，.ball-group 又是 flex:none 不收缩；
+ * 窄屏下「序号 + 6 前区球 + 分隔线 + 后区球 + 复制按钮」总宽超过容器，
+ * 末尾的蓝 / 紫球被裁掉，而 body 的 overflow-x:hidden 让横向滚动也看不到。
+ * 方案：≤560px 用 grid 排两行——前区一行、后区一行，序号与复制按钮跨两行；
+ * 球径随视口缩放（clamp + vw），并允许组内换行兜底，任何宽度都不会再有球被隐藏。 */
+@media (max-width: 560px) {
+  .app-shell { padding: 16px 12px; }
+  .topbar { flex-wrap: wrap; gap: 12px; margin-bottom: 18px; }
+  .brand-mark { width: 42px; height: 42px; border-radius: 13px; }
+  .brand-mark svg { width: 25px; height: 25px; }
+  .brand-copy h1 { font-size: 18px; }
+  .session-counter, .conn-pill { white-space: nowrap; }
+  .panel { padding: 16px 14px; border-radius: 17px; }
+  .panel-head { flex-wrap: wrap; gap: 6px; }
+
+  .action-zone { flex-direction: column; gap: 10px; }
+  .generate-btn { height: 62px; justify-content: center; padding: 0 16px; }
+  .btn-main { font-size: 17px; }
+  .ghost-actions { width: 100%; flex-direction: row; height: 42px; gap: 10px; }
+
+  .ticket {
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) 30px;
+    grid-template-rows: auto auto;
+    column-gap: 8px;
+    row-gap: 7px;
+    padding: 11px 12px;
+    --ball-size: clamp(22px, 7.2vw, 30px);
+  }
+  /* 两个 .ball-group 是 .ticket 下仅有的 div，:first-of-type=前区、:last-of-type=后区。 */
+  .ticket-idx { grid-column: 1; grid-row: 1 / span 2; width: auto; font-size: 18px; }
+  .ticket > .ball-group:first-of-type { grid-column: 2; grid-row: 1; }
+  .ticket > .ball-group:last-of-type {
+    grid-column: 2; grid-row: 2;
+    border-top: 1px dashed rgba(255, 255, 255, 0.1);
+    padding-top: 7px;
+  }
+  .zone-split { display: none; }
+  .ticket-copy { grid-column: 3; grid-row: 1 / span 2; width: 30px; height: 30px; margin-left: 0; }
+  .ball-group { min-width: 0; flex-wrap: wrap; gap: 4px; }
+  .ball { width: var(--ball-size); height: var(--ball-size); font-size: calc(var(--ball-size) * 0.38); }
+  .mini-ball { width: 20px; height: 20px; font-size: 9px; }
+  .footer { flex-wrap: wrap; gap: 8px; line-height: 1.6; }
 }
